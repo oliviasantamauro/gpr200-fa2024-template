@@ -21,32 +21,6 @@ float vertices[] = {
 	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
 };
 
-const char* vertexShaderSource = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec4 aColor;
-out vec4 Color;
-uniform float uTime;
-void main()
-{
-   Color = aColor;
-   vec3 pos = aPos;
-   pos.y += sin(uTime + pos.x) / 4.0;
-   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);
-}
-)";
-
-const char* fragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-in vec4 Color;
-uniform float uTime;
-void main()
-{
-   FragColor = Color * (sin(uTime) * 0.5 + 0.5);
-}
-)";
-
 
 int main() {
 	printf("Initializing...");
@@ -65,6 +39,7 @@ int main() {
 		return 1;
 	}
 	//Initialization goes here!
+	Shader shaderProgram("assets/shader.vert", "assets/shader.frag");
 
 	unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
@@ -81,41 +56,6 @@ int main() {
 
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-
-	//vertex shader
-	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s", infoLog);
-	}
-
-	//fragment shader
-	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s", infoLog);
-	}
-
-	//shader program
-	unsigned int shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s", infoLog);
-	}
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
 	
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -128,9 +68,9 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//Drawing happens here!
-		glUseProgram(shaderProgram);
+		shaderProgram.use();
 
-		int timeLoc = glGetUniformLocation(shaderProgram, "uTime");
+		int timeLoc = glGetUniformLocation(shaderProgram.ID, "uTime");
 		glUniform1f(timeLoc, time);
 
 		glBindVertexArray(VAO);
