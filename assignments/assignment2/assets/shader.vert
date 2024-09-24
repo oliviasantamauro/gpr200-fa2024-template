@@ -7,6 +7,6 @@ void main()
 {
    Color = aColor;
    vec3 pos = aPos;
-   pos.y += abs(sin(uTime)) / 4.0;
+   pos.y += sin(uTime + pos.x) / 4.0;
    gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);
 }
