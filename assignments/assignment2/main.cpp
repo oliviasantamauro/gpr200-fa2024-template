@@ -9,7 +9,7 @@
 #include <woah/shader.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <woah/stb_image.h>
+#include <ew/external/stb_image.h>
 
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 720;
@@ -47,7 +47,9 @@ int main() {
 		return 1;
 	}
 	//Initialization goes here!
-	Shader shaderProgram("assets/shader.vert", "assets/shader.frag");
+	Shader bgShader("assets/bgShader.vert", "assets/bgShader.frag");
+    Shader charShader("assets/charShader.vert", "assets/charShader.frag");
+    glEnable(GL_BLEND);
 
 	  unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -131,16 +133,23 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//Drawing happens here!
-		shaderProgram.use();
-        glUniform1i(glGetUniformLocation(shaderProgram.ID, "texture1"), 0);
-        shaderProgram.setInt("texture2", 1);
-
-		int timeLoc = glGetUniformLocation(shaderProgram.ID, "uTime");
+		bgShader.use();
+        glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
+		int timeLoc = glGetUniformLocation(bgShader.ID, "uTime");
 		glUniform1f(timeLoc, time);
 
 		glBindVertexArray(VAO);
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        charShader.use();
+        glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 0);
+        timeLoc = glGetUniformLocation(charShader.ID, "uTime");
+        glUniform1f(timeLoc, time);
+
+        glBindVertexArray(VAO);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 	}
