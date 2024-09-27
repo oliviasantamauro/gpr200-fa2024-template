@@ -15,7 +15,7 @@ set(CORE_INC_DIR
  CACHE PATH "CORE INCLUDE SOURCE PATH"
 )
 
-add_library(core STATIC ${CORE_SRC} ${CORE_INC} "woah/shader.h" "woah/shader.cpp" )
+add_library(core STATIC ${CORE_SRC} ${CORE_INC} "woah/shader.h" "woah/shader.cpp"   "woah/texture.cpp" "woah/texture.h")
 
 find_package(OpenGL REQUIRED)
 

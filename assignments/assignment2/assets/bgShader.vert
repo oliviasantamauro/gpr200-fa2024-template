@@ -10,8 +10,8 @@ uniform float uTime;
 void main()
 {
    Color = aColor;
-   TexCoord = aTexCoord;
+   TexCoord = aTexCoord * 4.0f;
    vec3 pos = aPos;
    pos.y += sin(uTime + pos.x) / 8.0;
-   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);
+   gl_Position = vec4(pos.x * 2, pos.y * 2, pos.z * 2, 1.0);
 }

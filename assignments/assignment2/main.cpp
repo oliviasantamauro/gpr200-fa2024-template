@@ -7,9 +7,7 @@
 #include <glm/glm.hpp>
 
 #include <woah/shader.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <ew/external/stb_image.h>
+#include <woah/texture.h>
 
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 720;
@@ -74,53 +72,12 @@ int main() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-	//gramma bg texture
-    unsigned int texture1, texture2;
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
+    //textures
+    Texture character("assets/gramma.png", GL_NEAREST, GL_CLAMP_TO_EDGE);
+    Texture bg("assets/gramma_bg.png", GL_NEAREST, GL_REPEAT);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load("assets/gramma_bg.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-
-    // gramma texture
-
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    data = stbi_load("assets/gramma.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
+    glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
+    glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 0);
 	
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -133,6 +90,8 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//Drawing happens here!
+        
+		bg.Bind();
 		bgShader.use();
         glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
 		int timeLoc = glGetUniformLocation(bgShader.ID, "uTime");
@@ -142,6 +101,7 @@ int main() {
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+		character.Bind();
         charShader.use();
         glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 0);
         timeLoc = glGetUniformLocation(charShader.ID, "uTime");
