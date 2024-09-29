@@ -112,7 +112,8 @@ int main() {
 
 		//character
         charShader.use();
-        glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 0);
+		timeLoc = glGetUniformLocation(charShader.ID, "uTime");
+		glUniform1f(timeLoc, time * 3);
 		character.Bind(1);
 		glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 1);
 
