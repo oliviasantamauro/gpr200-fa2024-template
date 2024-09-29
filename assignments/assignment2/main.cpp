@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "ew/external/stb_image.h"
 #include <ew/external/glad.h>
 #include <ew/ewMath/ewMath.h>
 #include <GLFW/glfw3.h>
@@ -16,16 +17,28 @@ int  success;
 char infoLog[512];
 
 float vertices[] = {
-	// positions          // colors           // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  // top left 
+    // positions          // colors           // texture coords
+    // Background
+    -1.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f, // top left
+     1.0f,  1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f, // top right
+     1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f, // bottom right
+    -1.0f, -1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f,  // bottom left 
+
+    // Character
+     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  // top left 
 };
 
 unsigned int indices[] = {
-	0, 1, 3, // first triangle
-	1, 2, 3  // second triangle
+    // Background
+    0, 1, 2, // first triangle
+    2, 3, 0, // second triangle
+
+    // Character
+    4, 5, 6, // first triangle
+    6, 7, 4  // second triangle
 };
 
 int main() {
@@ -49,35 +62,32 @@ int main() {
     Shader charShader("assets/charShader.vert", "assets/charShader.frag");
     glEnable(GL_BLEND);
 
-	  unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+	unsigned int VAO, VBO, EBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
 
-    glBindVertexArray(VAO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    // texture coord
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+	// position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	// texture coord
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
     //textures
     Texture character("assets/gramma.png", GL_NEAREST, GL_CLAMP_TO_EDGE);
     Texture bg("assets/gramma_bg.png", GL_NEAREST, GL_REPEAT);
 
-    glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
-    glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 0);
 	
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -90,26 +100,24 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//Drawing happens here!
-        
-		bg.Bind();
+		//bg
 		bgShader.use();
-        glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
 		int timeLoc = glGetUniformLocation(bgShader.ID, "uTime");
 		glUniform1f(timeLoc, time);
+		bg.Bind(0);
+		glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
 
 		glBindVertexArray(VAO);
-
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		character.Bind();
+		//character
         charShader.use();
         glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 0);
-        timeLoc = glGetUniformLocation(charShader.ID, "uTime");
-        glUniform1f(timeLoc, time);
+		character.Bind(1);
+		glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 1);
 
-        glBindVertexArray(VAO);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 	}
