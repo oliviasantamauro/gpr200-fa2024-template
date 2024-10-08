@@ -17,28 +17,16 @@ int  success;
 char infoLog[512];
 
 float vertices[] = {
-    // positions          // colors           // texture coords
-    // Background
-    -1.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f, // top left
-     1.0f,  1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f, // top right
-     1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f, // bottom right
-    -1.0f, -1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f,  // bottom left 
-
-    // Character
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  // top left 
+	// positions          // colors           // texture coords
+	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 };
 
 unsigned int indices[] = {
-    // Background
-    0, 1, 2, // first triangle
-    2, 3, 0, // second triangle
-
-    // Character
-    4, 5, 6, // first triangle
-    6, 7, 4  // second triangle
+	0, 1, 3, // first triangle
+	1, 2, 3  // second triangle
 };
 
 int main() {
@@ -58,16 +46,16 @@ int main() {
 		return 1;
 	}
 	//Initialization goes here!
-	Shader bgShader("assets/bgShader.vert", "assets/bgShader.frag");
-    Shader charShader("assets/charShader.vert", "assets/charShader.frag");
+	Shader shaderProgram("assets/shader.vert", "assets/shader.frag");
     glEnable(GL_BLEND);
 
-	unsigned int VAO, VBO, EBO;
+	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 
 	glBindVertexArray(VAO);
+
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
@@ -85,9 +73,8 @@ int main() {
 	glEnableVertexAttribArray(2);
 
     //textures
-    Texture character("assets/gramma.png", GL_NEAREST, GL_CLAMP_TO_EDGE);
-    Texture bg("assets/gramma_bg.png", GL_NEAREST, GL_REPEAT);
-
+	Texture bg("assets/gramma_bg.png", GL_NEAREST, GL_REPEAT);
+	Texture character("assets/gramma.png", GL_NEAREST, GL_CLAMP_TO_EDGE);
 	
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -100,22 +87,15 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//Drawing happens here!
-		//bg
-		bgShader.use();
-		int timeLoc = glGetUniformLocation(bgShader.ID, "uTime");
-		glUniform1f(timeLoc, time);
 		bg.Bind(0);
-		glUniform1i(glGetUniformLocation(bgShader.ID, "texture1"), 0);
-
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		//character
-        charShader.use();
-		timeLoc = glGetUniformLocation(charShader.ID, "uTime");
-		glUniform1f(timeLoc, time * 3);
 		character.Bind(1);
-		glUniform1i(glGetUniformLocation(charShader.ID, "texture2"), 1);
+
+		shaderProgram.use();
+
+		int timeLoc = glGetUniformLocation(shaderProgram.ID, "uTime");
+		glUniform1f(timeLoc, time);
+		shaderProgram.setInt("texture1", 0);
+		shaderProgram.setInt("texture2", 1);
 
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
