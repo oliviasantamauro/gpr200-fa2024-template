@@ -12,14 +12,18 @@
 #include <woah/shader.h>
 #include <woah/texture.h>
 
+void processInput(GLFWwindow* window);
+
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 720;
 
-float CUBE_SPEED = 10.0f;
+const float CUBE_SPEED = 15.0f;
 
 int  success;
 char infoLog[512];
 
+// cube variables
+// local (vertex) position
 float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -64,9 +68,20 @@ float vertices[] = {
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
+// world position
 glm::vec3 cubePositions[20];
 glm::vec3 cubeRotations[20];
 glm::vec3 cubeScales[20];
+
+// camera variables
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+// time variables
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float currentFrame;
 
 int main() {
 	printf("Initializing...");
@@ -128,12 +143,17 @@ int main() {
 
     //textures
 	Texture cubeFace("assets/gramma_bg.png", GL_NEAREST, GL_REPEAT);
-	
+
+
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
-		float time = (float)glfwGetTime();
+		currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		processInput(window);
 
 		//Clear framebuffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -145,12 +165,17 @@ int main() {
 		shaderProgram.use();
 		shaderProgram.setInt("texture1", 0);
 
+		// camera
+		glm::mat4 view = glm::mat4(1.0f);
+		float radius = 10.0f;
+		float camX = static_cast<float>(sin(glfwGetTime()) * radius);
+		float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		shaderProgram.setMat4("view", view);
+
 		// create transformations
 		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 view = glm::mat4(1.0f);
 		glm::mat4 projection = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 		projection = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
 		unsigned int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
@@ -168,10 +193,14 @@ int main() {
 			model = glm::translate(model, cubePositions[i]);
 
 			// rotation
-			float time = (float)glfwGetTime();
-			model = glm::rotate(model, glm::radians(time * cubeRotations[i].x / CUBE_SPEED), glm::vec3(1.0f, 0.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(time * cubeRotations[i].y / CUBE_SPEED), glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::rotate(model, glm::radians(time * cubeRotations[i].z / CUBE_SPEED), glm::vec3(0.0f, 0.0f, 1.0f));
+			cubeRotations[i][0] += deltaTime * cubeRotations[i].x / CUBE_SPEED;
+			cubeRotations[i][1] += deltaTime * cubeRotations[i].y / CUBE_SPEED;
+			cubeRotations[i][2] += deltaTime * cubeRotations[i].z / CUBE_SPEED;
+
+			model = glm::rotate(model, glm::radians(cubeRotations[i][0]), glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(cubeRotations[i][1]), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, glm::radians(cubeRotations[i][2]), glm::vec3(0.0f, 0.0f, 1.0f));
+
 
 			// scale
 			model = glm::scale(model, cubeScales[i]);
@@ -185,4 +214,31 @@ int main() {
 		glfwSwapBuffers(window);
 	}
 	printf("Shutting down...");
+}
+
+
+void processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	float BaseCameraSpeed = static_cast<float>(2.5 * deltaTime);
+	float cameraSpeed = BaseCameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		cameraSpeed = BaseCameraSpeed * 2.0f;
+	else
+		cameraSpeed = BaseCameraSpeed;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		cameraPos += cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		cameraPos -= cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		cameraPos += cameraSpeed * cameraUp;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		cameraPos -= cameraSpeed * cameraUp;
 }
