@@ -13,11 +13,13 @@
 #include <woah/texture.h>
 
 void processInput(GLFWwindow* window);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 720;
 
-const float CUBE_SPEED = 15.0f;
+const float CUBE_SPEED = 25.0f;
 
 int  success;
 char infoLog[512];
@@ -74,6 +76,13 @@ glm::vec3 cubeRotations[20];
 glm::vec3 cubeScales[20];
 
 // camera variables
+bool firstMouse = true;
+float yaw = -90.0f;
+float pitch = 0.0f;
+float lastX = 800.0f / 2.0;
+float lastY = 600.0 / 2.0;
+float fov = 60.0f;
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -100,7 +109,7 @@ int main() {
 		return 1;
 	}
 	//Initialization goes here!
-	// 
+
 	// cube position/scale/rotation generation
 	srand(time(NULL));
 	for (int i = 0; i < 20; i++) {
@@ -120,9 +129,11 @@ int main() {
 		cubeScales[i] = glm::vec3(scale, scale, scale);
 	}
 
+	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	Shader shaderProgram("assets/shader.vert", "assets/shader.frag");
-    glEnable(GL_BLEND);
 
 	unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
@@ -154,6 +165,8 @@ int main() {
 		lastFrame = currentFrame;
 
 		processInput(window);
+		glfwSetCursorPosCallback(window, mouse_callback);
+		glfwSetScrollCallback(window, scroll_callback);
 
 		//Clear framebuffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -176,7 +189,7 @@ int main() {
 		// create transformations
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 1000.0f);
 
 		unsigned int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
 		unsigned int viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
@@ -241,4 +254,46 @@ void processInput(GLFWwindow* window)
 		cameraPos += cameraSpeed * cameraUp;
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		cameraPos -= cameraSpeed * cameraUp;
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos;
+	lastX = xpos;
+	lastY = ypos;
+
+	float sensitivity = 0.1f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	yaw += xoffset;
+	pitch += yoffset;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraFront = glm::normalize(direction);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	fov -= (float)yoffset;
+	if (fov < 1.0f)
+		fov = 1.0f;
+	if (fov > 60.0f)
+		fov = 60.0f;
 }
