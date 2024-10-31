@@ -97,8 +97,8 @@ float currentFrame;
 
 // light variables
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-float ambientK, diffuseK, specularK, shine;
-glm::mat3 rgb;
+float ambientK, diffuseK, specularK, shine = 0.25f;
+glm::vec3 rgb = glm::vec3(1.0f, 1.0f, 1.0f);
 
 int main() {
 	printf("Initializing...");
@@ -206,6 +206,10 @@ int main() {
 		cubeFace.Bind(0);
 
 		shaderProgram.use();
+		shaderProgram.setFloat("ambientK", ambientK);
+		shaderProgram.setFloat("diffuseK", diffuseK);
+		shaderProgram.setFloat("specularK", specularK);
+		shaderProgram.setFloat("shine", shine);
 		shaderProgram.setInt("texture1", 0);
 		shaderProgram.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
 		shaderProgram.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -264,6 +268,7 @@ int main() {
 		lightingShader.use();
 		lightingShader.setMat4("projection", projection);
 		lightingShader.setMat4("view", view);
+		lightingShader.setVec3("lightColor", rgb);
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f));
@@ -279,7 +284,7 @@ int main() {
 
 		ImGui::Begin("Settings");
 		ImGui::DragFloat3("Light Position", &lightPos.x, 0.1f);
-		//ImGui::ColorEdit3("RGB Color", &rgb.r);
+		ImGui::ColorEdit3("RGB Color", glm::value_ptr(rgb));
 		ImGui::SliderFloat("Ambient K", &ambientK, 0.0f, 1.0f);
 		ImGui::SliderFloat("Diffuse K", &diffuseK, 0.0f, 1.0f);
 		ImGui::SliderFloat("Specular K", &specularK, 0.0f, 1.0f);
@@ -297,14 +302,6 @@ int main() {
 
 void processInput(GLFWwindow* window)
 {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-
-	if (glfwGetKey(window, GLFW_MOUSE_BUTTON_2) != GLFW_PRESS)
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	else
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
 	float BaseCameraSpeed = static_cast<float>(2.5 * deltaTime);
 	float cameraSpeed = BaseCameraSpeed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
@@ -328,35 +325,49 @@ void processInput(GLFWwindow* window)
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	if (firstMouse)
-	{
+	bool cameraLocked;
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		cameraLocked = false;
+	}
+	else {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		cameraLocked = true;
+	}
+	if (!cameraLocked) {
+		if (firstMouse)
+		{
+			lastX = xpos;
+			lastY = ypos;
+			firstMouse = false;
+		}
+
+		float xoffset = xpos - lastX;
+		float yoffset = lastY - ypos;
 		lastX = xpos;
 		lastY = ypos;
-		firstMouse = false;
+
+		float sensitivity = 0.1f;
+		xoffset *= sensitivity;
+		yoffset *= sensitivity;
+
+		yaw += xoffset;
+		pitch += yoffset;
+
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+
+		glm::vec3 direction;
+		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+		direction.y = sin(glm::radians(pitch));
+		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+		cameraFront = glm::normalize(direction);
 	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-	lastX = xpos;
-	lastY = ypos;
-
-	float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	yaw += xoffset;
-	pitch += yoffset;
-
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
