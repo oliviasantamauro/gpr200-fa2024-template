@@ -96,8 +96,8 @@ float lastFrame = 0.0f;
 float currentFrame;
 
 // light variables
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-float ambientK, diffuseK, specularK, shine = 0.25f;
+glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
+float ambientK = 0.25f, diffuseK = 0.25f, specularK = 0.25f, shine = 0.25f;
 glm::vec3 rgb = glm::vec3(1.0f, 1.0f, 1.0f);
 
 int main() {
@@ -175,12 +175,14 @@ int main() {
 	Texture cubeFace("assets/gramma_bg.png", GL_NEAREST, GL_REPEAT);
 
 	// light cube
-	unsigned int lightVAO;
+	unsigned int lightVAO, lightVBO;
 	glGenVertexArrays(1, &lightVAO);
+
+	glGenBuffers(1, &lightVBO);
 	glBindVertexArray(lightVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, lightVBO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
@@ -199,7 +201,7 @@ int main() {
 		glfwSetScrollCallback(window, scroll_callback);
 
 		//Clear framebuffer
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.05f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Drawing happens here!
@@ -325,49 +327,40 @@ void processInput(GLFWwindow* window)
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	bool cameraLocked;
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
+	 if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        if (firstMouse) {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		cameraLocked = false;
-	}
-	else {
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		cameraLocked = true;
-	}
-	if (!cameraLocked) {
-		if (firstMouse)
-		{
-			lastX = xpos;
-			lastY = ypos;
-			firstMouse = false;
-		}
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos;
+        lastX = xpos;
+        lastY = ypos;
 
-		float xoffset = xpos - lastX;
-		float yoffset = lastY - ypos;
-		lastX = xpos;
-		lastY = ypos;
+        float sensitivity = 0.1f;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
 
-		float sensitivity = 0.1f;
-		xoffset *= sensitivity;
-		yoffset *= sensitivity;
+        yaw += xoffset;
+        pitch += yoffset;
 
-		yaw += xoffset;
-		pitch += yoffset;
+        if (pitch > 89.0f)
+            pitch = 89.0f;
+        if (pitch < -89.0f)
+            pitch = -89.0f;
 
-		if (pitch > 89.0f)
-			pitch = 89.0f;
-		if (pitch < -89.0f)
-			pitch = -89.0f;
-
-		glm::vec3 direction;
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		cameraFront = glm::normalize(direction);
-	}
+        glm::vec3 direction;
+        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        direction.y = sin(glm::radians(pitch));
+        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(direction);
+    }
+    else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
